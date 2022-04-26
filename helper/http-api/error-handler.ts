@@ -5,13 +5,6 @@ import { AxiosError } from 'axios';
 import { baseErrorHandler } from '../base-error-handler';
 import { defaultResponse, Response } from './response';
 
-/**
- * HTTP API error handler
- *
- * @param {Error | HttpError | AxiosError | RuntimeError} caughtError
- * @param {Response} httpApiResponse
- * @returns {APIGatewayProxyResult}
- */
 export function errorHandler(
   caughtError: Error | HttpError | AxiosError | RuntimeError,
   httpApiResponse: Response = defaultResponse
