@@ -84,7 +84,7 @@ export class GalleryService {
 
       await this.dbPicturesService.addPicturesToTheDB();
 
-      return { message: 'Default pictures added' };
+      return { message: 'Default pictures were added' };
     } catch (err) {
       throw new PictureError('Failed to upload default images')
     }
