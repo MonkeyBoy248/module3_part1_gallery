@@ -60,6 +60,8 @@ export class AuthService {
       await mongoConnectionService.connectDB();
 
       await this.dbUsersService.addUsersToDB();
+
+      return {message: 'Default users were successfully added'}
     } catch (err) {
       throw new UserError('Failed to upload users');
     }
