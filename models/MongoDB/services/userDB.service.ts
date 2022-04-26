@@ -2,7 +2,7 @@ import { authorizedUsers } from '@helper/authorizedUsers';
 import { UserModel } from '@models/MongoDB/user.model';
 import { HashPasswordService } from '@services/hashPassword.service'
 import { User } from '@interfaces/user.interface'
-import { UserError } from "../../../errors/userError.error";
+import { UserError } from "../../../errors/user.error";
 import { ObjectId } from "mongodb";
 import { RequestUser } from "../../../api/authentication/auth.interface";
 
