@@ -10,20 +10,18 @@ export class UserDBService {
   private hashService = new HashPasswordService();
 
   addUsersToDB = async () => {
-    const newUsers: User[] = [];
-
-    for (let user of authorizedUsers) {
+    const newUsers: (User | undefined)[] = await Promise.all(authorizedUsers.map(async (user) => {
       const hashedPassword = await this.hashService.hashPassword(user.password);
 
-      if ((await UserModel.exists({ email: user.email })) === null) {
-        newUsers.push({
+      if (await UserModel.exists({ email: user.email }) === null) {
+        return {
           _id: new ObjectId(),
           email: user.email,
           password: hashedPassword.hash,
           salt: hashedPassword.salt,
-        });
+        } as User;
       }
-    }
+    }));
 
     await Promise.all(
       newUsers.map(async (item) => await UserModel.create(item))

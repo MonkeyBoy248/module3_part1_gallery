@@ -11,18 +11,15 @@ export class PicturesDBService {
     try {
       const pictureNames = await this.fileService.getFileNames() || [];
       const pictureMetadata = await this.fileService.getFilesMetadata();
-      const newPicturesList: Picture[] = [];
-
-
-      for (let i = 0; i < pictureNames.length; i++) {
-        if (await PictureModel.exists({path: pictureNames[i]}) === null) {
-          newPicturesList.push({
-            path: pictureNames[i],
-            metadata: pictureMetadata[i],
+      const newPicturesList: (Picture | undefined)[] = await Promise.all(pictureNames.map(async (fileName, index) => {
+        if (await PictureModel.exists({path: fileName}) === null) {
+          return {
+            path: fileName,
+            metadata: pictureMetadata[index],
             owner: null,
-          })
+          } as Picture;
         }
-      }
+      }));
 
       await Promise.all(newPicturesList.map(async (item) => {
         await PictureModel.create(item);
