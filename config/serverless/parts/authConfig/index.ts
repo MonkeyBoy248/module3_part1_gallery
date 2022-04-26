@@ -36,7 +36,7 @@ export const uploadDefaultUsers = {
   events: [
     {
       httpApi: {
-        path: "auth/upload-default-users",
+        path: "/auth/upload-default-users",
         method: "post"
       }
     }
