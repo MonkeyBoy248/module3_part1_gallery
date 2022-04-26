@@ -47,7 +47,7 @@ export const uploadDefaultPictures = {
     events: [
     {
       httpApi: {
-        path: '/gallery/upload-default',
+        path: '/gallery/upload-default-pictures',
         method: 'post',
       },
     },
