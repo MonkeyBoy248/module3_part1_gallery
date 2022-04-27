@@ -56,15 +56,15 @@ export class GalleryService {
     try {
       await mongoConnectionService.connectDB();
 
-      const picturesAmount = await this.dbPicturesService.getTotalImagesAmount();
       const user = await this.dbUsersService.findUserByEmail(email);
 
+      const picturesAmount = await this.dbPicturesService.getTotalImagesAmount();
       const pictureName = await this.fileService.saveFileWithANewName(file, picturesAmount);
-      const metadata = await this.fileService.getFilesMetadata();
+      const picturesInfo = await this.fileService.getFilesInfo();
 
       const pictureObject: Picture = {
         path: pictureName!,
-        metadata: metadata[picturesAmount],
+        metadata: picturesInfo.metadata[picturesAmount],
         owner: user._id,
       }
 

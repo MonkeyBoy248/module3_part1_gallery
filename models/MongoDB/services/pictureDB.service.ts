@@ -9,13 +9,13 @@ export class PicturesDBService {
 
   addPicturesToTheDB = async () => {
     try {
-      const pictureNames = await this.fileService.getFileNames() || [];
-      const pictureMetadata = await this.fileService.getFilesMetadata();
-      const newPicturesList: (Picture | undefined)[] = await Promise.all(pictureNames.map(async (fileName, index) => {
+      const picturesInfo = await this.fileService.getFilesInfo();
+
+      const newPicturesList: (Picture | undefined)[] = await Promise.all(picturesInfo.fileNames.map(async (fileName, index) => {
         if (await PictureModel.exists({path: fileName}) === null) {
           return {
             path: fileName,
-            metadata: pictureMetadata[index],
+            metadata: picturesInfo.metadata[index],
             owner: null,
           } as Picture;
         }
