@@ -9,12 +9,14 @@ export class GalleryManager {
     this.service = new GalleryService();
   }
 
-  createResponseObject = async (page: string = '1', limit: number = 4, filter: string = 'false', email: string) => {
-    if (Number(page) < 1 || Number(page) > await this.service.countTotalPagesAmount(limit, filter, email)) {
-      throw new HttpBadRequestError('Incorrect query parameters');
+  createResponseObject = async (page: string,  limit: string, filter: string, email: string) => {
+    const queryParams = this.service.validateAndConvertParams(page, limit, filter);
+
+    if (queryParams.page < 1 || queryParams.page > await this.service.countTotalPagesAmount(queryParams.limit, queryParams.filter, email)) {
+      throw new HttpBadRequestError('Invalid query parameters');
     }
 
-    return this.service.createResponseObject(page, limit, filter, email);
+    return this.service.createResponseObject(queryParams.page, queryParams.limit, queryParams.filter, email);
   }
 
   uploadUserPicture = async (file: MultipartRequest, email: string) => {

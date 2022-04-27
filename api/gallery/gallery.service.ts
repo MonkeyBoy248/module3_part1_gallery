@@ -1,11 +1,11 @@
 import { PicturesDBService } from "@models/MongoDB/services/pictureDB.service";
-import { GalleryObject } from "./gallery.interface";
+import { GalleryObject, QueryObject } from "./gallery.interface";
 import { Picture } from "@interfaces/picture.interface";
 import { mongoConnectionService } from "@services/mongoConnection.service";
 import { MultipartFile } from 'lambda-multipart-parser'
 import { FileService } from "@services/file.service";
 import { UserDBService } from "@models/MongoDB/services/userDB.service";
-import { HttpInternalServerError } from "@floteam/errors";
+import { HttpBadRequestError, HttpInternalServerError } from "@floteam/errors";
 
 export class GalleryService {
   private fileService;
@@ -18,7 +18,27 @@ export class GalleryService {
     this.dbUsersService = new UserDBService();
   }
 
-  countTotalPagesAmount = async (limit: number, filter: string, email:string): Promise<number> => {
+  validateAndConvertParams = (page: string, limit: string, filter: string) => {
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const filterValue = filter === 'false';
+
+    if (isNaN(pageNumber) || isNaN(limitNumber)) {
+      throw new HttpBadRequestError('Page value is not a number');
+    }
+
+    if (!isFinite(pageNumber) || !isFinite(limitNumber)) {
+      throw new HttpBadRequestError('Invalid page number');
+    }
+
+    return {
+      page: pageNumber,
+      limit: limitNumber,
+      filter: filterValue
+    } as QueryObject
+  }
+
+  countTotalPagesAmount = async (limit: number, filter: boolean, email:string): Promise<number> => {
     try {
       await mongoConnectionService.connectDB();
 
@@ -27,25 +47,26 @@ export class GalleryService {
       const picturesTotal = await this.dbPicturesService.getPicturesAmount(user._id!, filter) || 0;
       const totalPages: number = Math.ceil(picturesTotal / picturesPerPage);
 
+      console.log('total', totalPages);
+
       return totalPages;
     } catch (err) {
       throw new HttpInternalServerError('Failed to get pictures amount');
     }
   }
 
-  createResponseObject = async (page: string, limit: number, filter: string, email: string): Promise<GalleryObject> => {
+  createResponseObject = async (page: number, limit: number, filter: boolean, email: string): Promise<GalleryObject> => {
     try {
       await mongoConnectionService.connectDB();
 
       const user = await this.dbUsersService.findUserByEmail(email);
-      const objects = await this.dbPicturesService.getPicturesFromDB(user._id!, Number(page), Number(limit) || 4, filter) || [] as Picture[];
+      const objects = await this.dbPicturesService.getPicturesFromDB(user._id!, page, limit, filter) || [] as Picture[];
       const total = await this.countTotalPagesAmount(limit, filter, email);
-      const pageNumber = Number(page);
 
       return  {
         objects: objects,
         total,
-        page: pageNumber
+        page
       }
     } catch (err) {
       throw new HttpInternalServerError('Failed to create response object')

@@ -12,14 +12,19 @@ export const createResponseObject: APIGatewayProxyHandlerV2 = async (event, cont
   try {
     const email = event.requestContext.authorizer?.jwt.claims.email as string;
     const queryObject = event.queryStringParameters;
-    console.log('1234567\n\n');
-    const responseObject = await manager.createResponseObject(queryObject?.page, Number(queryObject?.limit), queryObject?.filter, email);
+    const page = queryObject?.page ?? '1';
+    const limit = queryObject?.limit ?? '4';
+    const filter = queryObject?.filter ?? 'false';
+
+    const responseObject = await manager.createResponseObject(page, limit, filter, email);
 
     return createResponse(200, responseObject);
   } catch (err) {
     return errorHandler(err);
   }
 };
+
+
 
 export const uploadUserPicture: APIGatewayProxyHandler = async (event, context) => {
   console.log(event);
