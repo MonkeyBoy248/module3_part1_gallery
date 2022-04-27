@@ -42,11 +42,11 @@ export class PicturesDBService {
     return PictureModel.estimatedDocumentCount();
   }
 
-  setFilterQuery = (ownerId: ObjectId, filter: string) => {
-    return filter === 'false' ? { $or: [{ owner: null }, { owner: ownerId }] } : { owner: ownerId };
+  setFilterQuery = (ownerId: ObjectId, filter: boolean) => {
+    return filter ? { $or: [{ owner: null }, { owner: ownerId }] } : { owner: ownerId };
   }
 
-  getPicturesFromDB = async (ownerId: ObjectId, page : number, limit: number, filter: string) => {
+  getPicturesFromDB = async (ownerId: ObjectId, page, limit, filter: boolean) => {
     let filterQuery = this.setFilterQuery(ownerId, filter);
 
     try {
@@ -56,7 +56,7 @@ export class PicturesDBService {
     }
   }
 
-  getPicturesAmount = async (ownerId: ObjectId, filter: string) => {
+  getPicturesAmount = async (ownerId: ObjectId, filter: boolean) => {
     let filterQuery = this.setFilterQuery(ownerId, filter);
 
     return PictureModel.countDocuments(filterQuery);
