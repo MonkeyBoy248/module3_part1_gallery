@@ -1,11 +1,10 @@
 import { errorHandler } from '@helper/http-api/error-handler';
 import { createResponse } from '@helper/http-api/response';
 import {
-  APIGatewayAuthorizerResult,
-  APIGatewayProxyHandlerV2,
-  APIGatewayTokenAuthorizerWithContextHandler
+  APIGatewayProxyHandlerV2, Handler
 } from "aws-lambda";
 import { AuthManager } from "./auth.manager";
+import { APIGatewayAuthorizerSimpleResult, APIGatewayRequestAuthorizerHttpApiPayloadV2Event } from "@interfaces/api-gateway-authorizer.interface";
 
 export const signUp: APIGatewayProxyHandlerV2 = async (event, context) => {
   console.log(event);
@@ -50,44 +49,35 @@ export const uploadDefaultUsers: APIGatewayProxyHandlerV2 = async (event, contex
   }
 }
 
-export function generatePolicy<C extends APIGatewayAuthorizerResult['context']>(
-  principalId: string,
-  effect: 'Allow' | 'Deny',
-  resource: string,
+export function generateSimpleResponse<C extends APIGatewayAuthorizerSimpleResult['context']>(
+  isAuthorized: boolean,
   context: C
-): APIGatewayAuthorizerResult & { context: C } {
-  const authResponse: APIGatewayAuthorizerResult & { context: C } = {
-    principalId,
-    policyDocument: {
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Action: 'execute-api:Invoke',
-          Effect: effect,
-          Resource: resource,
-        },
-      ],
-    },
+): APIGatewayAuthorizerSimpleResult & { context: C } {
+  const authResponse: APIGatewayAuthorizerSimpleResult & { context: C } = {
+    isAuthorized,
     context,
   };
 
   return authResponse;
 }
 
-export const authenticate: APIGatewayTokenAuthorizerWithContextHandler<Record<string, any>> = async (event, context) => {
+export const authenticate: Handler<
+  APIGatewayRequestAuthorizerHttpApiPayloadV2Event,
+  APIGatewayAuthorizerSimpleResult
+  > = async (event, context) => {
   console.log(event);
 
   try {
     const manager = new AuthManager();
-    const token = event.authorizationToken;
+    const token = event.identitySource?.[0]
 
     console.log('token', token);
 
-    const user = await manager.authenticate(token);
+    const user = await manager.authenticate(token!);
 
-    return generatePolicy('user', 'Allow', '*', {email: user.email});
+    return generateSimpleResponse(true, {email: user.email});
   } catch (err) {
-    return generatePolicy('user', 'Deny', '*', {});
+    return generateSimpleResponse(false, {});
   }
 }
 
