@@ -14,6 +14,6 @@ export const authConfig: AWSPartitial = {
     }
   },
   functions: {
-    signUp, logIn, uploadDefaultUsers
+   httpApiJwtAuthorizer, signUp, logIn, uploadDefaultUsers
   },
 }
