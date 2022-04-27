@@ -79,13 +79,14 @@ export class GalleryService {
 
       const user = await this.dbUsersService.findUserByEmail(email);
 
+
       const picturesAmount = await this.dbPicturesService.getTotalImagesAmount();
       const pictureName = await this.fileService.saveFileWithANewName(file, picturesAmount);
       const picturesInfo = await this.fileService.getFilesInfo();
 
       const pictureObject: Picture = {
         path: pictureName!,
-        metadata: picturesInfo.metadata[picturesAmount],
+        metadata: picturesInfo.metadata[picturesAmount - 1],
         owner: user._id,
       }
 

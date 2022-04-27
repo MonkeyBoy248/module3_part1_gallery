@@ -33,7 +33,7 @@ export const uploadUserPicture: APIGatewayProxyHandler = async (event, context) 
     const manager = new GalleryManager();
 
 
-    const email = event.requestContext.authorizer?.email;
+    const email = event.requestContext.authorizer?.jwt.claims.email as string;
     const file = await multipartParser.parse(event);
     const response = await manager.uploadUserPicture(file, email);
 
