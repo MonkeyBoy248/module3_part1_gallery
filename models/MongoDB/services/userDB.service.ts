@@ -7,40 +7,46 @@ import { ObjectId } from "mongodb";
 import { RequestUser } from "../../../api/authentication/auth.interface";
 
 export class UserDBService {
-  private hashService = new HashPasswordService();
+  private hashService;
 
-  addUsersToDB = async () => {
+  constructor() {
+    this.hashService = new HashPasswordService();
+  }
+
+  private createUserObject = async (email, password, salt) => {
+    const userObject: User = {
+      _id: new ObjectId(),
+      email,
+      password,
+      salt
+    } as User;
+
+    return userObject;
+  }
+
+  saveUsersToDB = async (userData?: RequestUser) => {
+    if (userData) {
+      const email = userData.email;
+      const hashedPassword = await this.hashService.hashPassword(userData.password);
+
+      const newUserObject = await this.createUserObject(email, hashedPassword.hash, hashedPassword.salt);
+      await UserModel.create(newUserObject);
+
+      return;
+    }
+
     const newUsers: (User | undefined)[] = await Promise.all(authorizedUsers.map(async (user) => {
       const hashedPassword = await this.hashService.hashPassword(user.password);
 
       if (await UserModel.exists({ email: user.email }) === null) {
-        return {
-          _id: new ObjectId(),
-          email: user.email,
-          password: hashedPassword.hash,
-          salt: hashedPassword.salt,
-        } as User;
+        return this.createUserObject(user.email, hashedPassword.hash, hashedPassword.salt);
       }
     }));
 
     await Promise.all(
-      newUsers.map(async (item) => await UserModel.create(item))
+      newUsers.map(async (item) => UserModel.create(item))
     );
   };
-
-  addNewUserToDB = async (userData: RequestUser) => {
-    const email = userData.email;
-    const hashedPassword = await this.hashService.hashPassword(userData.password);
-
-    const newUserObject: User = {
-      _id: new ObjectId(),
-      email,
-      password: hashedPassword.hash,
-      salt: hashedPassword.salt
-    }
-
-    await UserModel.create(newUserObject);
-  }
 
   findUserByEmail = async (email: string): Promise<User> => {
     const user = await UserModel.findOne({email});
