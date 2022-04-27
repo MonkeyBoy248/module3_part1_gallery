@@ -39,24 +39,27 @@ export class PicturesDBService {
   }
 
   getTotalImagesAmount = async () => {
-    return await PictureModel.estimatedDocumentCount();
+    return PictureModel.estimatedDocumentCount();
+  }
+
+  setFilterQuery = (ownerId: ObjectId, filter: string) => {
+    return filter === 'false' ? { $or: [{ owner: null }, { owner: ownerId }] } : { owner: ownerId };
   }
 
   getPicturesFromDB = async (ownerId: ObjectId, page : number, limit: number, filter: string) => {
-    let filterQuery = filter === 'false' ? {$or: [{owner: null}, {owner: ownerId}]} : {owner: ownerId};
+    let filterQuery = this.setFilterQuery(ownerId, filter);
 
     try {
-      return await PictureModel.find(filterQuery, null, {skip: limit * page - limit, limit: limit});
+      return PictureModel.find(filterQuery, null, {skip: limit * page - limit, limit: limit});
     } catch (err) {
       throw new HttpInternalServerError('Failed to get pictures ', err.message);
     }
-
   }
 
-  getPicturesAmount = async (id: ObjectId, filter: string) => {
-    let filterQuery = filter === 'false' ? {$or: [{owner: null}, {owner: id}]} : {owner: id};
+  getPicturesAmount = async (ownerId: ObjectId, filter: string) => {
+    let filterQuery = this.setFilterQuery(ownerId, filter);
 
-    return await PictureModel.countDocuments(filterQuery);
+    return PictureModel.countDocuments(filterQuery);
   }
 
   isUserPicturesEmpty = async (id: ObjectId) => {
