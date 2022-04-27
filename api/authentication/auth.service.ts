@@ -17,6 +17,25 @@ export class AuthService {
     this.hashService = new HashPasswordService();
   }
 
+  validateUserData = (data: string) => {
+    const userData = JSON.parse(data);
+
+    if (!userData.email) {
+      throw new HttpBadRequestError('No email was provided');
+    }
+
+    if (!userData.password) {
+      throw new HttpBadRequestError('No password was provided')
+    }
+
+    const userObject: RequestUser = {
+      email: userData.email,
+      password: userData.password
+    }
+
+    return userObject;
+  }
+
   signUp = async (userData: RequestUser) => {
     try {
       await mongoConnectionService.connectDB();
