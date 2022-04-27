@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { promisify } from "util";
-import { AuthenticationError } from "../errors/authentication.error";
+import { HttpUnauthorizedError } from "@floteam/errors";
 
 interface HashedPassword {
   hash: string,
@@ -27,7 +27,7 @@ export class HashPasswordService {
     const isValid = `${salt}${hashedUserPassword.toString('hex')}` === data
 
      if (!isValid) {
-       throw new AuthenticationError('Invalid password');
+       throw new HttpUnauthorizedError('Invalid password');
      }
   }
 }

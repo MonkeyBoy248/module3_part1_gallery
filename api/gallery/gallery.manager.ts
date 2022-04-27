@@ -1,7 +1,6 @@
 import { GalleryService } from "./gallery.service";
-import { HttpQueryError } from "../../errors/httpQuery.error";
 import { MultipartRequest } from "lambda-multipart-parser";
-import { FileOperationError } from "../../errors/fileOperation.error";
+import { HttpBadRequestError } from "@floteam/errors";
 
 export class GalleryManager {
   private readonly service: GalleryService;
@@ -12,7 +11,7 @@ export class GalleryManager {
 
   createResponseObject = async (page: string = '1', limit: number = 4, filter: string = 'false', email: string) => {
     if (Number(page) < 1 || Number(page) > await this.service.countTotalPagesAmount(limit, filter, email)) {
-      throw new HttpQueryError('Incorrect query parameters');
+      throw new HttpBadRequestError('Incorrect query parameters');
     }
 
     return this.service.createResponseObject(page, limit, filter, email);
@@ -20,7 +19,7 @@ export class GalleryManager {
 
   uploadUserPicture = async (file: MultipartRequest, email: string) => {
     if (file.files.length === 0) {
-      throw new FileOperationError('No file to upload');
+      throw new HttpBadRequestError('No file to upload');
     }
 
     return this.service.uploadUserPicture(file.files[0], email);

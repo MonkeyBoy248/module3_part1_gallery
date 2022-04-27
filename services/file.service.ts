@@ -3,7 +3,7 @@ import {Stats} from 'fs';
 import fs from 'fs';
 import path from 'path';
 import { MultipartFile } from 'lambda-multipart-parser';
-import { FileOperationError } from '../errors/fileOperation.error';
+import { HttpInternalServerError } from "@floteam/errors";
 
 interface FileInfo {
   fileNames: string[];
@@ -28,7 +28,7 @@ export class FileService {
 
       return fileInfo;
     } catch (err) {
-      throw new FileOperationError('Failed to get file names list')
+      throw new HttpInternalServerError('Failed to get file names list')
     }
   }
 
@@ -44,7 +44,7 @@ export class FileService {
 
       return pictureName;
     } catch (err) {
-      throw new FileOperationError('Failed to rename file');
+      throw new HttpInternalServerError('Failed to rename file');
     }
   }
 }

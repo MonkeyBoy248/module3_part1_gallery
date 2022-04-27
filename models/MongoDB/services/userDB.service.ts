@@ -2,9 +2,9 @@ import { authorizedUsers } from '@helper/authorizedUsers';
 import { UserModel } from '@models/MongoDB/user.model';
 import { HashPasswordService } from '@services/hashPassword.service'
 import { User } from '@interfaces/user.interface'
-import { UserError } from "../../../errors/user.error";
 import { ObjectId } from "mongodb";
 import { RequestUser } from "../../../api/authentication/auth.interface";
+import { HttpBadRequestError } from "@floteam/errors";
 
 export class UserDBService {
   private hashService;
@@ -52,7 +52,7 @@ export class UserDBService {
     const user = await UserModel.findOne({email});
 
     if (user === null) {
-      throw new UserError('User does not exist');
+      throw new HttpBadRequestError('User does not exist');
     }
 
     return user;

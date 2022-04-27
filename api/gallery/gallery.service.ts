@@ -5,7 +5,7 @@ import { mongoConnectionService } from "@services/mongoConnection.service";
 import { MultipartFile } from 'lambda-multipart-parser'
 import { FileService } from "@services/file.service";
 import { UserDBService } from "@models/MongoDB/services/userDB.service";
-import { PictureError } from "../../errors/picture.error";
+import { HttpInternalServerError } from "@floteam/errors";
 
 export class GalleryService {
   private fileService;
@@ -29,7 +29,7 @@ export class GalleryService {
 
       return totalPages;
     } catch (err) {
-      throw new PictureError('Failed to get pictures amount');
+      throw new HttpInternalServerError('Failed to get pictures amount');
     }
   }
 
@@ -48,7 +48,7 @@ export class GalleryService {
         page: pageNumber
       }
     } catch (err) {
-      throw new PictureError('Failed to create response object')
+      throw new HttpInternalServerError('Failed to create response object')
     }
   }
 
@@ -72,7 +72,7 @@ export class GalleryService {
 
       return {object: pictureObject};
     } catch (err) {
-      throw new PictureError('Failed to upload a new picture');
+      throw new HttpInternalServerError('Failed to upload a new picture');
     }
   }
 
@@ -84,7 +84,7 @@ export class GalleryService {
 
       return { message: 'Default pictures were added' };
     } catch (err) {
-      throw new PictureError('Failed to upload default images')
+      throw new HttpInternalServerError('Failed to upload default images')
     }
   }
 }
