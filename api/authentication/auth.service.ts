@@ -23,7 +23,7 @@ export class AuthService {
     try {
       await mongoConnectionService.connectDB();
 
-      const newUser = await this.dbUsersService.addNewUserToDB(userData);
+      const newUser = await this.dbUsersService.saveUsersToDB(userData);
 
       return {user: newUser, message: 'User successfully added'}
     } catch (err) {
@@ -59,7 +59,7 @@ export class AuthService {
     try {
       await mongoConnectionService.connectDB();
 
-      await this.dbUsersService.addUsersToDB();
+      await this.dbUsersService.saveUsersToDB();
 
       return {message: 'Default users were successfully added'}
     } catch (err) {

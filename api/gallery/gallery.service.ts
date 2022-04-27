@@ -59,10 +59,8 @@ export class GalleryService {
       const picturesAmount = await this.dbPicturesService.getTotalImagesAmount();
       const user = await this.dbUsersService.findUserByEmail(email);
 
-      const pictureName = await this.fileService.renameFile(file, picturesAmount);
+      const pictureName = await this.fileService.saveFileWithANewName(file, picturesAmount);
       const metadata = await this.fileService.getFilesMetadata();
-      console.log('metadata', metadata)
-      console.log('amount', picturesAmount);
 
       const pictureObject: Picture = {
         path: pictureName!,
