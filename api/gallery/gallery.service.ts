@@ -18,23 +18,28 @@ export class GalleryService {
     this.dbUsersService = new UserDBService();
   }
 
-  validateAndConvertParams = (page: string, limit: string, filter: string) => {
+  validateAndConvertParams = async (page: string, limit: string, filter: string, email: string) => {
     const pageNumber = parseInt(page, 10);
     const limitNumber = parseInt(limit, 10);
-    const filterValue = filter === 'false';
+    const filterBool = filter === 'false';
+    const totalPagesAmount = await this.countTotalPagesAmount(limitNumber, filterBool, email)
 
     if (isNaN(pageNumber) || isNaN(limitNumber)) {
-      throw new HttpBadRequestError('Page value is not a number');
+      throw new HttpBadRequestError('Page or limit value is not a number');
     }
 
     if (!isFinite(pageNumber) || !isFinite(limitNumber)) {
+      throw new HttpBadRequestError('Invalid query parameters');
+    }
+
+    if (pageNumber < 1 || pageNumber > totalPagesAmount) {
       throw new HttpBadRequestError('Invalid page number');
     }
 
     return {
       page: pageNumber,
       limit: limitNumber,
-      filter: filterValue
+      filter: filterBool
     } as QueryObject
   }
 

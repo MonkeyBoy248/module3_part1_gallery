@@ -10,11 +10,7 @@ export class GalleryManager {
   }
 
   createResponseObject = async (page: string,  limit: string, filter: string, email: string) => {
-    const queryParams = this.service.validateAndConvertParams(page, limit, filter);
-
-    if (queryParams.page < 1 || queryParams.page > await this.service.countTotalPagesAmount(queryParams.limit, queryParams.filter, email)) {
-      throw new HttpBadRequestError('Invalid query parameters');
-    }
+    const queryParams = await this.service.validateAndConvertParams(page, limit, filter, email);
 
     return this.service.createResponseObject(queryParams.page, queryParams.limit, queryParams.filter, email);
   }
