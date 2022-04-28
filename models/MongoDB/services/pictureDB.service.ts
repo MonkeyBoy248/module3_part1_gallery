@@ -2,40 +2,27 @@ import { Picture } from "@interfaces/picture.interface";
 import { PictureModel } from "@models/MongoDB/picture.model";
 import { FileService } from "@services/file.service";
 import { ObjectId } from "mongodb";
-import { HttpBadRequestError, HttpInternalServerError } from "@floteam/errors";
+import { HttpInternalServerError } from "@floteam/errors";
 
 export class PicturesDBService {
   private fileService = new FileService();
 
-  addPicturesToTheDB = async () => {
-    try {
-      const picturesInfo = await this.fileService.getFilesInfo();
-
-      const newPicturesList: (Picture | undefined)[] = await Promise.all(picturesInfo.fileNames.map(async (fileName, index) => {
-        if (await PictureModel.exists({path: fileName}) === null) {
-          return {
-            path: fileName,
-            metadata: picturesInfo.metadata[index],
-            owner: null,
-          } as Picture;
-        }
-      }));
-
-      await Promise.all(newPicturesList.map(async (item) => {
-        await PictureModel.create(item);
-        console.log(`item ${item} added`);
-      }));
-    } catch (err) {
-     throw new HttpBadRequestError('Picture already exists')
-    }
+  createPictureObjectInDB = async (pictureObject: Picture) => {
+    await PictureModel.create(pictureObject);
   }
 
-  addUserPicturesToDB = async (pictureObject: Picture) => {
-    try {
-      await PictureModel.create(pictureObject);
-    } catch (err) {
-      throw new HttpInternalServerError('Failed to upload picture', err.message)
+  savePicturesToTheDB = async (pictureObject?: Picture) => {
+    if (pictureObject) {
+      return this.createPictureObjectInDB(pictureObject);
     }
+
+    const picturesInfo = await this.fileService.getFilesInfo();
+
+    return Promise.all(picturesInfo.fileNames.map(async (fileName, index) => {
+      if (await PictureModel.exists({path: fileName}) === null) {
+        return this.createPictureObjectInDB({path: fileName, metadata: picturesInfo.metadata[index], owner: null})
+      }
+    }));
   }
 
   getTotalImagesAmount = async () => {

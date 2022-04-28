@@ -13,7 +13,7 @@ export class UserDBService {
     this.hashService = new HashPasswordService();
   }
 
-  private createUserObject = async (email, password, salt) => {
+  private createUserObjectInDB = async (email, password, salt) => {
     const userObject: User = {
       _id: new ObjectId(),
       email,
@@ -21,7 +21,7 @@ export class UserDBService {
       salt
     } as User;
 
-    return userObject;
+    await UserModel.create(userObject);
   }
 
   saveUsersToDB = async (userData?: RequestUser) => {
@@ -29,23 +29,16 @@ export class UserDBService {
       const email = userData.email;
       const hashedPassword = await this.hashService.hashPassword(userData.password);
 
-      const newUserObject = await this.createUserObject(email, hashedPassword.hash, hashedPassword.salt);
-      await UserModel.create(newUserObject);
-
-      return;
+      return this.createUserObjectInDB(email, hashedPassword.hash, hashedPassword.salt);
     }
 
-    const newUsers: (User | undefined)[] = await Promise.all(authorizedUsers.map(async (user) => {
+    return Promise.all(authorizedUsers.map(async (user) => {
       const hashedPassword = await this.hashService.hashPassword(user.password);
 
       if (await UserModel.exists({ email: user.email }) === null) {
-        return this.createUserObject(user.email, hashedPassword.hash, hashedPassword.salt);
+        return this.createUserObjectInDB(user.email, hashedPassword.hash, hashedPassword.salt);
       }
     }));
-
-    await Promise.all(
-      newUsers.map(async (item) => UserModel.create(item))
-    );
   };
 
   findUserByEmail = async (email: string): Promise<User> => {

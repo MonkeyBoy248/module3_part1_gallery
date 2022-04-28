@@ -88,14 +88,15 @@ export class GalleryService {
       const picturesAmount = await this.dbPicturesService.getTotalImagesAmount();
       const pictureName = await this.fileService.saveFileWithANewName(file, picturesAmount);
       const picturesInfo = await this.fileService.getFilesInfo();
+      const pictureMetadata = picturesInfo.metadata[picturesAmount - 1];
 
       const pictureObject: Picture = {
         path: pictureName!,
-        metadata: picturesInfo.metadata[picturesAmount - 1],
+        metadata: pictureMetadata,
         owner: user._id,
       }
 
-      await this.dbPicturesService.addUserPicturesToDB(pictureObject);
+      await this.dbPicturesService.savePicturesToTheDB(pictureObject);
 
       return {object: pictureObject};
     } catch (err) {
@@ -107,7 +108,7 @@ export class GalleryService {
     try {
       await mongoConnectionService.connectDB();
 
-      await this.dbPicturesService.addPicturesToTheDB();
+      await this.dbPicturesService.savePicturesToTheDB();
 
       return { message: 'Default pictures were added' };
     } catch (err) {
