@@ -3,9 +3,7 @@ import { mongoConnectionService } from "@services/mongoConnection.service";
 import { UserDBService } from "@models/MongoDB/services/userDB.service";
 import { HashPasswordService } from "@services/hashPassword.service";
 import { JwtService} from "@services/jwt.service";
-import { SignUpError } from "../../errors/signUp.error";
-import { UserError } from "../../errors/user.error";
-import { AuthenticationError } from "../../errors/authentication.error";
+import { AlreadyExistsError, HttpBadRequestError, HttpUnauthorizedError } from "@floteam/errors";
 
 export class AuthService {
   private readonly dbUsersService;
@@ -19,15 +17,34 @@ export class AuthService {
     this.hashService = new HashPasswordService();
   }
 
+  validateUserData = (data: string) => {
+    const userData = JSON.parse(data);
+
+    if (!userData.email) {
+      throw new HttpBadRequestError('No email was provided');
+    }
+
+    if (!userData.password) {
+      throw new HttpBadRequestError('No password was provided')
+    }
+
+    const userObject: RequestUser = {
+      email: userData.email,
+      password: userData.password
+    }
+
+    return userObject;
+  }
+
   signUp = async (userData: RequestUser) => {
     try {
       await mongoConnectionService.connectDB();
 
-      const newUser = await this.dbUsersService.addNewUserToDB(userData);
+      const newUser = await this.dbUsersService.saveUsersToDB(userData);
 
       return {user: newUser, message: 'User successfully added'}
     } catch (err) {
-      throw new SignUpError('User with this email already exists')
+      throw new AlreadyExistsError('User with this email already exists')
     }
   }
 
@@ -41,7 +58,7 @@ export class AuthService {
 
       return this.jwtService.createToken(contender.email);
     } catch (err) {
-      throw new AuthenticationError('Wrong user data');
+      throw new HttpUnauthorizedError('Wrong user data');
     }
   }
 
@@ -51,7 +68,7 @@ export class AuthService {
 
       return this.jwtService.verifyToken(token);
     } catch (err) {
-      throw new AuthenticationError('Invalid token');
+      throw new HttpUnauthorizedError('Invalid token');
     }
   }
 
@@ -59,11 +76,11 @@ export class AuthService {
     try {
       await mongoConnectionService.connectDB();
 
-      await this.dbUsersService.addUsersToDB();
+      await this.dbUsersService.saveUsersToDB();
 
       return {message: 'Default users were successfully added'}
     } catch (err) {
-      throw new UserError('Failed to upload users');
+      throw new HttpBadRequestError('Failed to upload users');
     }
   }
 }

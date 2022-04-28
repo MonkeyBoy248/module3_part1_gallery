@@ -2,61 +2,51 @@ import { Picture } from "@interfaces/picture.interface";
 import { PictureModel } from "@models/MongoDB/picture.model";
 import { FileService } from "@services/file.service";
 import { ObjectId } from "mongodb";
-import { HttpBadRequestError, HttpInternalServerError } from "@floteam/errors";
+import { HttpInternalServerError } from "@floteam/errors";
 
 export class PicturesDBService {
   private fileService = new FileService();
 
-  addPicturesToTheDB = async () => {
-    try {
-      const pictureNames = await this.fileService.getFileNames() || [];
-      const pictureMetadata = await this.fileService.getFilesMetadata();
-      const newPicturesList: (Picture | undefined)[] = await Promise.all(pictureNames.map(async (fileName, index) => {
-        if (await PictureModel.exists({path: fileName}) === null) {
-          return {
-            path: fileName,
-            metadata: pictureMetadata[index],
-            owner: null,
-          } as Picture;
-        }
-      }));
-
-      await Promise.all(newPicturesList.map(async (item) => {
-        await PictureModel.create(item);
-        console.log(`item ${item} added`);
-      }));
-    } catch (err) {
-     throw new HttpBadRequestError('Picture already exists')
-    }
+  createPictureObjectInDB = async (pictureObject: Picture) => {
+    await PictureModel.create(pictureObject);
   }
 
-  addUserPicturesToDB = async (pictureObject: Picture) => {
-    try {
-      await PictureModel.create(pictureObject);
-    } catch (err) {
-      throw new HttpInternalServerError('Failed to upload picture', err.message)
+  savePicturesToTheDB = async (pictureObject?: Picture) => {
+    if (pictureObject) {
+      return this.createPictureObjectInDB(pictureObject);
     }
+
+    const picturesInfo = await this.fileService.getFilesInfo();
+
+    return Promise.all(picturesInfo.fileNames.map(async (fileName, index) => {
+      if (await PictureModel.exists({path: fileName}) === null) {
+        return this.createPictureObjectInDB({path: fileName, metadata: picturesInfo.metadata[index], owner: null})
+      }
+    }));
   }
 
   getTotalImagesAmount = async () => {
-    return await PictureModel.estimatedDocumentCount();
+    return PictureModel.estimatedDocumentCount();
   }
 
-  getPicturesFromDB = async (ownerId: ObjectId, page : number, limit: number, filter: string) => {
-    let filterQuery = filter === 'false' ? {$or: [{owner: null}, {owner: ownerId}]} : {owner: ownerId};
+  setFilterQuery = (ownerId: ObjectId, filter: boolean) => {
+    return filter ? { $or: [{ owner: null }, { owner: ownerId }] } : { owner: ownerId };
+  }
+
+  getPicturesFromDB = async (ownerId: ObjectId, page, limit, filter: boolean) => {
+    let filterQuery = this.setFilterQuery(ownerId, filter);
 
     try {
-      return await PictureModel.find(filterQuery, null, {skip: limit * page - limit, limit: limit});
+      return PictureModel.find(filterQuery, null, {skip: limit * page - limit, limit: limit});
     } catch (err) {
       throw new HttpInternalServerError('Failed to get pictures ', err.message);
     }
-
   }
 
-  getPicturesAmount = async (id: ObjectId, filter: string) => {
-    let filterQuery = filter === 'false' ? {$or: [{owner: null}, {owner: id}]} : {owner: id};
+  getPicturesAmount = async (ownerId: ObjectId, filter: boolean) => {
+    let filterQuery = this.setFilterQuery(ownerId, filter);
 
-    return await PictureModel.countDocuments(filterQuery);
+    return PictureModel.countDocuments(filterQuery);
   }
 
   isUserPicturesEmpty = async (id: ObjectId) => {

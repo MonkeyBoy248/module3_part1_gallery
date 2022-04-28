@@ -3,48 +3,48 @@ import {Stats} from 'fs';
 import fs from 'fs';
 import path from 'path';
 import { MultipartFile } from 'lambda-multipart-parser';
-import { FileOperationError } from '../errors/fileOperation.error';
+import { HttpInternalServerError } from "@floteam/errors";
 
+interface FileInfo {
+  fileNames: string[];
+  metadata: Stats[];
+}
 
 export class FileService {
-  getFileNames = async () => {
+  private path = paths.API_IMAGES_PATH;
+
+  getFilesInfo = async (): Promise<FileInfo> => {
     console.log(paths.API_IMAGES_PATH);
     try {
-      const fileNames = await fs.promises.readdir(paths.API_IMAGES_PATH);
+      const fileNames = await fs.promises.readdir(this.path);
+      const metadata: Stats[] = await Promise.all(fileNames.map(async (name) => {
+        return fs.promises.stat(path.join(this.path, name));
+      }));
 
-      if (fileNames.length === 0) {
-        return [];
+      const fileInfo: FileInfo = {
+        fileNames,
+        metadata
       }
 
-      return fileNames;
+      return fileInfo;
     } catch (err) {
-      throw new FileOperationError('Failed to get file names list')
+      throw new HttpInternalServerError('Failed to get file names list')
     }
   }
 
-  getFilesMetadata = async () => {
-    const { API_IMAGES_PATH } = paths;
-    const imageNames = await this.getFileNames();
-    const metadataArray: Stats[] = await Promise.all(imageNames.map(async (fileName) => {
-      return fs.promises.stat(path.join(API_IMAGES_PATH, fileName));
-    }));
-    
-    return metadataArray;
-  }
-
-  renameFile = async (fileData: MultipartFile, picturesAmount: number) => {
+  saveFileWithANewName = async (fileData: MultipartFile, picturesAmount: number) => {
     const fileName = fileData.filename;
     try {
       const pictureName = `user_image_${picturesAmount + 1}${fileName.slice(fileName.indexOf('.'))}`;
 
       await fs.promises.writeFile(
-        path.join(paths.API_IMAGES_PATH, pictureName),
+        path.join(this.path, pictureName),
         fileData.content
       );
 
       return pictureName;
     } catch (err) {
-      throw new FileOperationError('Failed to rename file');
+      throw new HttpInternalServerError('Failed to rename file');
     }
   }
 }

@@ -2,51 +2,50 @@ import { authorizedUsers } from '@helper/authorizedUsers';
 import { UserModel } from '@models/MongoDB/user.model';
 import { HashPasswordService } from '@services/hashPassword.service'
 import { User } from '@interfaces/user.interface'
-import { UserError } from "../../../errors/user.error";
 import { ObjectId } from "mongodb";
 import { RequestUser } from "../../../api/authentication/auth.interface";
+import { HttpBadRequestError } from "@floteam/errors";
 
 export class UserDBService {
-  private hashService = new HashPasswordService();
+  private hashService;
 
-  addUsersToDB = async () => {
-    const newUsers: (User | undefined)[] = await Promise.all(authorizedUsers.map(async (user) => {
+  constructor() {
+    this.hashService = new HashPasswordService();
+  }
+
+  private createUserObjectInDB = async (email, password, salt) => {
+    const userObject: User = {
+      _id: new ObjectId(),
+      email,
+      password,
+      salt
+    } as User;
+
+    await UserModel.create(userObject);
+  }
+
+  saveUsersToDB = async (userData?: RequestUser) => {
+    if (userData) {
+      const email = userData.email;
+      const hashedPassword = await this.hashService.hashPassword(userData.password);
+
+      return this.createUserObjectInDB(email, hashedPassword.hash, hashedPassword.salt);
+    }
+
+    return Promise.all(authorizedUsers.map(async (user) => {
       const hashedPassword = await this.hashService.hashPassword(user.password);
 
       if (await UserModel.exists({ email: user.email }) === null) {
-        return {
-          _id: new ObjectId(),
-          email: user.email,
-          password: hashedPassword.hash,
-          salt: hashedPassword.salt,
-        } as User;
+        return this.createUserObjectInDB(user.email, hashedPassword.hash, hashedPassword.salt);
       }
     }));
-
-    await Promise.all(
-      newUsers.map(async (item) => await UserModel.create(item))
-    );
   };
-
-  addNewUserToDB = async (userData: RequestUser) => {
-    const email = userData.email;
-    const hashedPassword = await this.hashService.hashPassword(userData.password);
-
-    const newUserObject: User = {
-      _id: new ObjectId(),
-      email,
-      password: hashedPassword.hash,
-      salt: hashedPassword.salt
-    }
-
-    await UserModel.create(newUserObject);
-  }
 
   findUserByEmail = async (email: string): Promise<User> => {
     const user = await UserModel.findOne({email});
 
     if (user === null) {
-      throw new UserError('User does not exist');
+      throw new HttpBadRequestError('User does not exist');
     }
 
     return user;

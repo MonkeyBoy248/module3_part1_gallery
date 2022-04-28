@@ -1,7 +1,5 @@
 import { AuthService } from "./auth.service";
-import { UserError } from "../../errors/user.error";
-import { RequestUser } from "./auth.interface";
-import { AuthenticationError } from "../../errors/authentication.error";
+import { HttpUnauthorizedError } from "@floteam/errors";
 
 export class AuthManager {
   private readonly service: AuthService;
@@ -10,33 +8,14 @@ export class AuthManager {
     this.service = new AuthService();
   }
 
-  validateUserData = (data: string) => {
-    const userData = JSON.parse(data);
-
-    if (!userData.email) {
-      throw new UserError('No email was provided');
-    }
-
-    if (!userData.password) {
-      throw new UserError('No password was provided')
-    }
-
-    const userObject: RequestUser = {
-      email: userData.email,
-      password: userData.password
-    }
-
-    return userObject;
-  }
-
   signUp = async (data: string) => {
-    const user = this.validateUserData(data);
+    const user = this.service.validateUserData(data);
 
     return this.service.signUp(user);
   }
 
   logIn = async (data: string) => {
-    const user = this.validateUserData(data);
+    const user = this.service.validateUserData(data);
 
     return this.service.logIn(user);
   }
@@ -47,7 +26,7 @@ export class AuthManager {
 
   authenticate = async (token: string) => {
     if (!token) {
-      throw new AuthenticationError('No token was provided');
+      throw new HttpUnauthorizedError('No token was provided');
     }
 
     return this.service.authenticate(token);

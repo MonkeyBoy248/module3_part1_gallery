@@ -1,11 +1,11 @@
 import { PicturesDBService } from "@models/MongoDB/services/pictureDB.service";
-import { GalleryObject } from "./gallery.interface";
+import { GalleryObject, QueryObject } from "./gallery.interface";
 import { Picture } from "@interfaces/picture.interface";
 import { mongoConnectionService } from "@services/mongoConnection.service";
 import { MultipartFile } from 'lambda-multipart-parser'
 import { FileService } from "@services/file.service";
 import { UserDBService } from "@models/MongoDB/services/userDB.service";
-import { PictureError } from "../../errors/picture.error";
+import { HttpBadRequestError, HttpInternalServerError } from "@floteam/errors";
 
 export class GalleryService {
   private fileService;
@@ -18,7 +18,32 @@ export class GalleryService {
     this.dbUsersService = new UserDBService();
   }
 
-  countTotalPagesAmount = async (limit: number, filter: string, email:string): Promise<number> => {
+  validateAndConvertParams = async (page: string, limit: string, filter: string, email: string) => {
+    const pageNumber = parseInt(page, 10);
+    const limitNumber = parseInt(limit, 10);
+    const filterBool = filter === 'false';
+    const totalPagesAmount = await this.countTotalPagesAmount(limitNumber, filterBool, email)
+
+    if (isNaN(pageNumber) || isNaN(limitNumber)) {
+      throw new HttpBadRequestError('Page or limit value is not a number');
+    }
+
+    if (!isFinite(pageNumber) || !isFinite(limitNumber)) {
+      throw new HttpBadRequestError('Invalid query parameters');
+    }
+
+    if (pageNumber < 1 || pageNumber > totalPagesAmount) {
+      throw new HttpBadRequestError('Invalid page number');
+    }
+
+    return {
+      page: pageNumber,
+      limit: limitNumber,
+      filter: filterBool
+    } as QueryObject
+  }
+
+  countTotalPagesAmount = async (limit: number, filter: boolean, email:string): Promise<number> => {
     try {
       await mongoConnectionService.connectDB();
 
@@ -27,28 +52,29 @@ export class GalleryService {
       const picturesTotal = await this.dbPicturesService.getPicturesAmount(user._id!, filter) || 0;
       const totalPages: number = Math.ceil(picturesTotal / picturesPerPage);
 
+      console.log('total', totalPages);
+
       return totalPages;
     } catch (err) {
-      throw new PictureError('Failed to get pictures amount');
+      throw new HttpInternalServerError('Failed to get pictures amount');
     }
   }
 
-  createResponseObject = async (page: string, limit: number, filter: string, email: string): Promise<GalleryObject> => {
+  createResponseObject = async (page: number, limit: number, filter: boolean, email: string): Promise<GalleryObject> => {
     try {
       await mongoConnectionService.connectDB();
 
       const user = await this.dbUsersService.findUserByEmail(email);
-      const objects = await this.dbPicturesService.getPicturesFromDB(user._id!, Number(page), Number(limit) || 4, filter) || [] as Picture[];
+      const objects = await this.dbPicturesService.getPicturesFromDB(user._id!, page, limit, filter) || [] as Picture[];
       const total = await this.countTotalPagesAmount(limit, filter, email);
-      const pageNumber = Number(page);
 
       return  {
         objects: objects,
         total,
-        page: pageNumber
+        page
       }
     } catch (err) {
-      throw new PictureError('Failed to create response object')
+      throw new HttpInternalServerError('Failed to create response object')
     }
   }
 
@@ -56,25 +82,25 @@ export class GalleryService {
     try {
       await mongoConnectionService.connectDB();
 
-      const picturesAmount = await this.dbPicturesService.getTotalImagesAmount();
       const user = await this.dbUsersService.findUserByEmail(email);
 
-      const pictureName = await this.fileService.renameFile(file, picturesAmount);
-      const metadata = await this.fileService.getFilesMetadata();
-      console.log('metadata', metadata)
-      console.log('amount', picturesAmount);
+
+      const picturesAmount = await this.dbPicturesService.getTotalImagesAmount();
+      const pictureName = await this.fileService.saveFileWithANewName(file, picturesAmount);
+      const picturesInfo = await this.fileService.getFilesInfo();
+      const pictureMetadata = picturesInfo.metadata[picturesAmount - 1];
 
       const pictureObject: Picture = {
         path: pictureName!,
-        metadata: metadata[picturesAmount],
+        metadata: pictureMetadata,
         owner: user._id,
       }
 
-      await this.dbPicturesService.addUserPicturesToDB(pictureObject);
+      await this.dbPicturesService.savePicturesToTheDB(pictureObject);
 
       return {object: pictureObject};
     } catch (err) {
-      throw new PictureError('Failed to upload a new picture');
+      throw new HttpInternalServerError('Failed to upload a new picture');
     }
   }
 
@@ -82,11 +108,11 @@ export class GalleryService {
     try {
       await mongoConnectionService.connectDB();
 
-      await this.dbPicturesService.addPicturesToTheDB();
+      await this.dbPicturesService.savePicturesToTheDB();
 
       return { message: 'Default pictures were added' };
     } catch (err) {
-      throw new PictureError('Failed to upload default images')
+      throw new HttpInternalServerError('Failed to upload default images')
     }
   }
 }

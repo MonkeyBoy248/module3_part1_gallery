@@ -9,11 +9,12 @@ export const authConfig: AWSPartitial = {
           type: "request",
           functionName: "httpApiJwtAuthorizer",
           identitySource: "$request.header.Authorization",
+          enableSimpleResponses: true
         }
       }
     }
   },
   functions: {
-    signUp, logIn, uploadDefaultUsers
+   httpApiJwtAuthorizer, signUp, logIn, uploadDefaultUsers
   },
 }
