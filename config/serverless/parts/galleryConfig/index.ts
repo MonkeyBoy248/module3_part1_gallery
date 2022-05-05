@@ -16,11 +16,6 @@ export const getPictures =  {
   ],
 };
 
-export const httpApiJwtAuthorizer = {
-  handler: 'api/authentication/handler.authenticate',
-  memorySize: 128
-}
-
 export const uploadPicture = {
   handler: 'api/gallery/handler.uploadUserPicture',
     description: 'Upload user picture to the server',
