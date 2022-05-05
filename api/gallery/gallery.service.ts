@@ -1,7 +1,7 @@
 import { PicturesDBService } from "@models/MongoDB/services/pictureDB.service";
 import { GalleryObject, QueryObject } from "./gallery.interface";
 import { Picture } from "@interfaces/picture.interface";
-import { mongoConnectionService } from "@services/mongoConnection.service";
+import { mongoConnectionService } from "@models/MongoDB/services/mongoConnection.service";
 import { MultipartFile } from 'lambda-multipart-parser'
 import { FileService } from "@services/file.service";
 import { UserDBService } from "@models/MongoDB/services/userDB.service";

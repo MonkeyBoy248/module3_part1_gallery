@@ -1,5 +1,5 @@
 import { RequestUser } from "./auth.interface";
-import { mongoConnectionService } from "@services/mongoConnection.service";
+import { mongoConnectionService } from "@models/MongoDB/services/mongoConnection.service";
 import { UserDBService } from "@models/MongoDB/services/userDB.service";
 import { HashPasswordService } from "@services/hashPassword.service";
 import { JwtService} from "@services/jwt.service";
